@@ -1,0 +1,22 @@
+For design notes, see design.txt.
+
+For programming reference, see reference.txt.
+
+This is the aimmachine.  It includes two components:
+ 1. an OSCAR state machine (oscar2.[ch])
+ 2. an OFT state machine (actually 2, one for TX, one for RX)
+
+For demos of each:
+
+OSCAR: 
+socks4-custom/RemoteSocket.cpp.  To build, run make _twice_.
+
+This is a GPL'd proxy server with the OSCAR bits tacked on.
+
+
+OFT:
+demo/server.c
+
+This is a server that listens on a given port and serves a single file.
+
+

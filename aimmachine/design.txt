@@ -1,0 +1,176 @@
+A Quick Theory of Operation Document
+
+========================================================================
+INTRODUCTION
+
+
+This library is implemented as a few state machines designed to act as
+a data-extracting proxy.  You initialize them, then pass in all
+network traffic as you receive it.  As the machines accept buffers,
+they do protocol parsing, manipulation, and sanitization.  They return
+a series of buffers which they would like output on the other side.
+They also support the injection of certain packets (request to send a
+file, an IM, etc).
+
+These libraries work entirely on buffers of bytes.  They do absolutely
+no network I/O themselves, which keeps the code simpler, but might
+hurt efficiency a little.  It also means that there's a slightly odd
+feeling to code written using them.
+
+There are three machines in this distribution: AIM Machine (OSCAR),
+OFT TX Machine (sending file), and the OFT RX Machine (accepting a
+sent file).  At the current time, the OFT RX Machine is unused and is
+therefore not documented here.
+
+
+========================================================================
+THE AIM MACHINE (OSCAR)
+
+OSCAR is the main protocol for AOL Instant Messenger.  It's comprised
+of two simplex data streams, one inbound and one outbound.  These are
+sent over the same TCP socket, but they act separately in many
+respects of the protocol.  In particular, each direction maintains its
+own state.  This state is "shaped the same" on both directions, so we
+simply create two copies of a state object, and tie them together.
+
+
+NETWORK DATA FLOW:
+------------------
+
+The machine takes in buffers without restriction and returns frames to
+proxy on to the other side.  By "without restriction," I mean that a
+buffer may contain a single full frame, part of a frame, or multiple
+frames.  In any of these cases, the machine will return the correct
+thing to its caller.
+
+Since the machine only has access to a portion of the network flow at
+any one time, it must internally maintain some state of the flow
+(between frames, in a header, or in a body), as well as the values for
+any unfinished frames.  Once it has a full frame, it applies any
+fixups that may be required, and returns a buffer out to be passed on
+to the other side.
+
+In fact, the machine actually returns a _queue_ of buffers.  On the
+proxy side, you need to walk through the list, outputting each.  This
+way, injection is a trivial operation, and handling multiple frames
+within a single input buffer becomes fairly trivial.
+
+
+SSL AUTH REQUIRES PASSTHROUGH:
+------------------------------
+
+AOL has made the process of frame parsing significantly more ugly
+recently.  Authorization now takes place over SSL, which is totally
+opaque to the proxy in the middle.  Where the protocol had previously
+all been nice, clean OSCAR frames, it now starts off with a huge flood
+of noise.  To accomodate this, we add a new protocol state to the
+machine: "passthrough."  In this mode, it accepts data and passes it
+through until it finds a complete OSCAR header.  Once it finds that,
+it switches over to protocol-parsing mode until it gets noise again,
+at which point it reverts to passthrough mode.
+
+
+
+FRAME INJECTION:
+----------------
+
+In order to inject a new frame, we obviously enough cannot just inject
+bytes whereever.  Instead, we must wait for the start of the next
+frame header (or keep track of the fact that we're in between body and
+header).  This library supports both forms of injection, which
+requires that the proxy server calls the library to fetch any frames
+pending sending when we're in "dead air."  (If we're not in dead air,
+there's already data flowing through the proxy, so it's going to fetch
+the inject packets as part of that.  But, when we're between frames
+and there's nothing happening on the connection, the proxy won't
+automatically receive the pending frames.)
+
+The core of injection is a mechanism to enqueue a raw buffer with
+length.  This obviously doesn't do anyone that doesn't speak OSCAR any
+good, so there are a few helper methods to inject particular frames
+(sendfile request, inbound IM, etc).
+
+
+CALLBACKS TO GET YOUR INFORMATION:
+----------------------------------
+
+The Machine uses an event-driven callback mechanism to deliver
+presence changes, messages, etc to the proxy server.  There is
+therefore a way to register callbacks for each kind of OSCAR frame.
+When that frame is received, the registered callback is executed with
+arguments depending on the type of the frame.
+
+To do the data extraction, the machine has to implement a subset of
+the body-parsing for AIM.  This makes things somewhat ugly, but not
+unreasonable.
+
+
+========================================================================
+THE OFT TX MACHINE (File Transfer)
+
+OFT is the Oscar File Transfer protocol, used to send files between
+AIM clients.  The OFT TX Machine implements the portion of OFT used to
+send a file to a client, including resume.  It's designed to be used
+in a fileserver, but operates using the same buffer-in/frame-queue-out
+design as the OSCAR Machine.
+
+FILE METADATA:
+--------------
+
+OFT uses a few pieces of metadata about the file when it establishes a
+connection.  Fortunately, the only ones that matter to us are the
+filename and filesize.  You'll need to have these before you can set
+up an OFT connection (on both the OSCAR and OFT sides).  There's a
+function in the OFT implementation for generating the OFT header for a
+given file with a given size.
+
+
+GENERAL FLOW:
+-------------
+
+Because OFT TX Machine operates in a buffer-driven environment, it
+doesn't know anything about network code.  This makes it supremely
+platform-independent, but requires that you set up the listeners,
+select() loop, etc, yourself.  It uses callbacks for three events in
+the protocol flow: "got a resume request (so you need to seek() in the
+file)", "start streaming the file over the connection", and "close
+connection."
+
+The general flow of OFT from the server's perspective is:
+ * accept connection0
+ * get OOB accept notification over OSCAR
+ * send OFT header
+ * receive OFT ACK or Resume
+ * (if Resume, send ResumeAccept)
+ * stream file contents
+ * receive TermACK
+ * close connection
+
+Accepting the connection is the server's responsibility, but it must
+also notify the OFT TX Machine about the connection state.  It must
+also let the machine know you got the inbound OSCAR ack (you can
+typically just tell the machine this happened, ignoring the OSCAR
+bits).
+
+At that point, the machine will send up a buffer for the server to
+send, and we enter the real OFT Machine loop.  Once the connection has
+been negotiated, the machine will use callbacks if there's a resume
+(and if so, where in the file we're re-starting, so you can seek
+there), and then a callback for when to start transmitting the file.
+As you send the file, you should update the machine with the number of
+bytes written.  After the file is written out, the client will become
+available for read, as they send the Terminating ACK of the file.
+When the OFT TX Machine sees this, it fires off a final callback to
+close the connection.
+
+
+KEEPING SERVER/MACHINE STATE:
+-----------------------------
+
+All of the callbacks above need to be tied to a given machine and,
+more importantly, to a given transfer.  This is done with an opaque
+token, an integer.  In the current server, it's just the fd of the
+current client-connected socket.  In your environment, it might be a
+key into a hash table of connections, etc.  In any case, it's the way
+you keep track of things between the OFT TX Machine and the consumer
+code.

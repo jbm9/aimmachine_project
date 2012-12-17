@@ -1,3 +1,6 @@
+[ 2007-11-15~20, quick custom data-extracting/-injecting proxy
+for AOL's OSCAR and OFT protocols ]
+
 For design notes, see design.txt.
 
 For programming reference, see reference.txt.

@@ -1,0 +1,361 @@
+This is more of a reference to actually using the libraries.
+
+========================================================================
+USING THE AIM MACHINE
+
+The current best example of the AIM Machine is in socks4-custom/.
+This is a GPL'd proxy that I've kludged the AIM machine into, on the
+RemoteSocket.h/RemoteSocket.cpp files.
+
+
+Initialization.
+---------------
+
+Each OSCAR connection needs its own pair of struct aim_machine , one
+for the inbound side, and the other for the outbound side.  I
+recommend making these member variables and passing them around by
+address.
+
+Declaration:
+	struct aim_machine istate,ostate;
+
+Initialization:
+	aim_init_pair(&istate, &ostate);
+
+
+
+Passing Packets Through.
+------------------------
+
+In your proxy, as you get in a packet from one side to the other,
+you'll want to pass it through the input machine.  The machine will
+give you back a list of buffers to send on through.  Note that the
+library has its own "frame_t" type.  This is actually just a struct
+wrapping up a char pointer and a length.  There's also frame_queue_t,
+another struct that creates a trivial singly-linked-list of frame_t.
+
+A quick example of how to do this loop:
+
+// INBOUND: we've got buffer "buf", length "len" from the server
+//          to send to the client.  This side uses istate.
+
+  struct frame_t f;
+  struct frame_queue_t *queue;
+  
+  f.buf = buf;
+  f.l = len;
+  
+  queue = am_run(&istate, &f);
+  
+  // sometimes, queue will be NULL (if we get a partial frame)
+  while(queue) {
+    struct frame_queue_t *r;
+    r = queue->next;
+  
+    //output_buffer(queue->f.buf, queue->f.l);
+  
+    // You need to free up these buffers, since there's no way for the
+    // machine to know they're done.
+    free(queue->f.buf);
+    free(queue);
+  
+    queue = r;
+  }
+  
+
+// OUTBOUND: we've got buffer "buf", length "len" from the client
+//           to send to the server.  Same as above, but with ostate 
+//           instead of istate.
+
+
+
+
+
+Getting Presence.
+-----------------
+
+To get presence information, you need to register a callback after you
+initialize the machine:
+
+  am_register_event_cb(&istate, 0x0003, 0x000b, cb_presence);
+  am_register_event_cb(&istate, 0x0003, 0x000c, cb_presence);
+
+These only come in from the server, so it's registered on istate,
+0x0003 is buddy management, 0x000b is oncoming, 0x000c is offgoing.
+cb_presence is below:
+
+  int cb_presence(struct aim_machine *s, ...) {
+    va_list ap;
+    char *sn;
+
+    char *coming_str;
+
+    int oncoming;
+    int state;
+    int idletime;
+
+    va_start(ap, s);
+    sn = va_arg(ap, char *);
+    oncoming = va_arg(ap, int);
+    state = va_arg(ap, int);
+    idletime = va_arg(ap, int);
+    va_end(ap);
+
+    if(oncoming == 0)
+      coming_str = "offgoing";
+    else if(oncoming == 1)
+      coming_str = "oncoming";
+    else
+      coming_str = "unknown (you shouldn't see this!)";
+
+
+    printf("Buddy %s: %s: %d/%x/%d\n", coming_str, sn, oncoming, state, idletime);
+    fflush(stdout);
+
+    return 0;
+  }
+
+
+The possible state values are found in oscar2.h:
+  enum { AIM_PRES_ONLINE = 0x00,
+	 AIM_PRES_AWAY   = 0x01,
+	 AIM_PRES_DND    = 0x02,
+	 AIM_PRES_OUT    = 0x04,
+	 AIM_PRES_BUSY   = 0x10,
+	 AIM_PRES_CHAT   = 0x20,
+	 AIM_PRES_INVIS  = 0x100 };
+
+
+
+Intercepting Outbound Messages.
+-------------------------------
+
+This is hooked on the output state, for type 0x0004/0x0006:
+
+
+  am_register_event_cb(&ostate, 0x0004, 0x0006, cb_message);
+
+  int cb_message(struct aim_machine *s, ...) {
+    va_list ap;
+    char *sn;
+    char *msg;
+
+    va_start(ap, s);
+    sn = va_arg(ap, char *);
+    msg = va_arg(ap, char *);
+    va_end(ap);
+
+    printf("outgoing message to %s: %s\n", sn, msg);
+    return 0;
+  }
+
+Sending Files.
+--------------
+
+To send files, you need the following:
+ * Server IP address
+ * Server port number
+ * Filename
+ * File size
+
+To inject the request to send a file to a given screenname, call
+
+  am_inject_sendfile(&ostate, sn, ip, port, filename, size);
+
+Note that you need to ensure that you then do an appropriate
+  queue = am_run(&ostate, &f); (f contains a zero-length buf)
+
+and flush that queue, to ensure that the request is sent immediately.
+
+
+Sending IMs Inbound (To the Local User).
+----------------------------------------
+
+To send an IM to a local user, apparently from a given SN, do:
+
+  aim_inject_message_inbound(&istate, sn, message);
+
+As when injecting a sendfile request, ensure that you flush the
+associated machine's queue immediately afterwards, or it might be a
+little while before the message is delivered (it's likely to be
+injected with the next incoming event).
+
+
+Sending IMs Outbound (To a remote user).
+----------------------------------------
+
+To send an IM to a remote user, apparently from a local SN, do:
+
+  aim_inject_message_outbound(&ostate, sn, message);
+
+As when injecting a sendfile request, ensure that you flush the
+associated machine's queue immediately afterwards, or it might be a
+little while before the message is delivered (it's likely to be
+injected with the next incoming event).
+
+
+Cleaning up.
+------------
+
+When you're tearing down your connection object, you need to make sure
+to do
+
+
+  am_finish(&istate);
+  am_finish(&ostate);
+
+to free up the resources associated with the machines.  They're each
+at least a few hundred bytes at this point, so it's noticable.
+
+
+
+========================================================================
+USING THE OFT TX MACHINE
+
+Setting up the fileheader.
+--------------------------
+
+The OFT TX machine below takes the full OFT header as input.  This is
+done for maintenance reasons (we currently only implement the
+necessary parts of the OFT header.  As AOL changes what is and isn't
+required, more parameters will be needed to fileheader initialization,
+but the machine itself should stay the same).
+
+Currently, you'll need the following information: the filename and the
+size.  You're recommended to pass in a cookie as well.  Ideally, this
+would be the same cookie as used to inject the sendfile request, but
+there's no way to recover that in the curren system.  This is a
+non-issue anyway, since it's totally and completely ignored.  However,
+putting in a random 8-digit ASCII number to be safe is recommeded.
+
+  struct aim_fileheader_t fh;
+
+  oft_fill_fileheader(&fh, cookie, filename, size);
+
+
+Setting up the machine.
+-----------------------
+
+Once you've got a filled-in fileheader, you can initialize your
+machine.  This requires the following:
+
+ * fileheader from above
+ * close_conn: a callback to notify the server that a connection 
+               may be closed
+ * begin_xfer: a callback to notify the server that a given connection
+               has had OFT negotiated successfully, and it may now 
+               start streaming file contents
+ * resume_offset: a callback to notify the server that, in the process
+                  of negotiating OFT, the remote client has requested
+                  a resume of the transfer at a given file offset.  You
+                  will need to seek() to the given offset in the file
+                  when this is given.
+ * token: an integer the machine will use to keep track of your
+          connection.  This is passed back to you in callbacks, so your
+          server can sensibly handle multiple connections with the same
+          codepath.  In the Unix demo, it's the fd of the client socket.
+
+
+  struct oft_tx_machine tx;
+  oft_tx_init(&tx, &fh, close_conn, begin_xfer, resume_offset, token);
+
+
+  int close_conn(int token) { 
+    printf("CLOSE callback\n");
+    /* token happens to be our sock fd... */
+    close(token);
+  }
+  
+  int begin_xfer(struct oft_tx_machine *m, int token) {
+    printf("XFER callback\n");
+    in_xfer = 1;
+  }
+  
+  int resume_offset(struct oft_tx_machine *m, int token, int pos) {
+    printf("resume callback\n");
+    lseek(token, pos, SEEK_SET);
+  }
+  
+
+
+Starting up the Negotiation.
+----------------------------
+
+Once you've set up a machine and created your listener, you then wait
+for the accept().  Once you've gotten the accept, you should let the
+OFT TX Machine know:
+    
+      if(1 == oft_tx_accepted(&tx)) {
+        // There are frames waiting to be sent
+      }
+
+This will move it from the pending connect state to the "waiting for
+OOB ACK" state.  The OOB ACK is an OSCAR packet sent over to let the
+OFT component know that the remote side has connected.  It appears to
+be there to pass an authentication token of some sort (the cookie,
+most likely), but isn't currently used.  Therefore, you can just
+assume it comes in, and call it like so:
+
+      if(1 == oft_tx_got_ooback(&tx)) {
+        // There are frames waiting to be sent
+      }
+
+
+In either case, if there are frames waiting to be sent, you should do
+the following:
+  queue = oft_tx_run(&tx, NULL, 0);
+
+The same rules apply to this frame queue as did for the OSCAR machine
+above.  Send these frames out to get the negotiation started.
+
+Once you've gotten to this point, you should enter a loop of 
+
+  // got in buf, len
+  queue = oft_tx_run(&tx, buf, len)
+  // send out queue
+
+Stay in this loop until you get a begin_xfer callback, to start
+streaming file content.
+
+Handle resumes.
+---------------
+
+Before you get begin_xfer, you might get a resume_offset callback
+first.  This is just to let you know that the client wants to resume a
+previous transfer of this file.  We trust them to know what they're
+doing, so we accept and notify you to seek() to the appropriate point
+in the file before you...
+
+Stream the file content.
+------------------------
+
+When you receive the begin_xfer callback, OFT negotiation has
+completed, and we're ready to just stream out the file contents.  You
+probably want to keep the read loop above, since the remote client
+might send a TermACK in the middle of the file (if they choke for any
+reason), and it might be helpful to see that before you get the
+connection closed on you.  Then again, this might not help you any;
+it's really a matter of personal preference and server design.
+
+In any case, after you receive begin_xfer, you should enter a loop of
+sending data to the remote side.  As you do so, please call 
+  oft_tx_sent_bytes(&tx, n_out);
+
+to update the state of the OFT TX Machine.
+
+
+Get the TermACK.
+----------------
+
+Once you're done sending the file, the remote client should send you
+an OFT packet back.  If you run oft_tx_run() on this packet, you'll
+generate the close_conn callback...
+
+
+Close the connection.
+---------------------
+
+When you get the close_conn callback, it should be safe to close the associated connection.
+
+
+

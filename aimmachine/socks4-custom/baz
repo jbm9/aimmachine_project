@@ -1,0 +1,210 @@
+Incoming
+SetupConnect(205.188.179.233, 5190)
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+2007-11-18 19:22:27 :: fd 5 :: read: 104 Connection reset by peer (Fatal)
+2007-11-18 19:22:27 :: fd 5 :: OnRead: 0 Remote not valid (Fatal)
+2007-11-18 19:22:27 :: fd 5 :: shutdown: 107 Transport endpoint is not connected (Error)
+Incoming
+SetupConnect(205.188.8.76, 5190)
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: sharethisdotcom: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: WSJ: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: Moviefone: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: ShoppingBuddy: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: HotSpot: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: Prof Gilzot: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: IM Street: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: Spleak: 1/0/-1
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: oeproxtest: 1/1/15
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+Buddy oncoming: oeproxtest: 1/0/-1
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+MESSAGE0(6): 
+MESSAGE1: replay
+MESSAGE2: replay
+outgoing message to oeproxtest: replay
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+   FRAME: (nil)   ||  (nil)
+ENQUEUE of (nil)
+ENQUEUE of (nil)
+nukebyte: 0
+MESSAGE0(2): 
+MESSAGE1: hi
+MESSAGE2: hi
+outgoing message to oeproxtest: hi
+   FRAME: 0x80b5510   ||  (nil)
+ENQUEUE of 0x80b5510
+ENQUEUE of (nil)
+nukebyte: 0
